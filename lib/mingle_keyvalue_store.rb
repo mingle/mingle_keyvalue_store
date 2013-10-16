@@ -7,9 +7,11 @@ require "tempfile"
 module Mingle
   module KeyvalueStore
     class PStoreBased
-      def initialize(path, namespace)
+      def initialize(path, namespace, key_column, value_column)
         @namespace = namespace
         @store_file = store_file(path)
+        @key_column = key_column
+        @value_column = value_column
         @pstore = PStore.new(@store_file)
       end
 
@@ -48,8 +50,8 @@ module Mingle
           return [] unless @pstore["all_names"]
           @pstore["all_names"].map do |name|
             {
-              "key" => name,
-              "value" => @pstore[name].to_json
+              @key_column.to_s => name,
+              @value_column.to_s => @pstore[name].to_json
             }
           end
         end
@@ -68,7 +70,7 @@ module Mingle
     end
 
     class DynamodbBased
-      def initialize(table_name, key_column=:tenant, value_column=:config)
+      def initialize(table_name, key_column, value_column)
         @key_column = key_column
         @value_column = value_column
         @table_name = table_name
@@ -97,12 +99,7 @@ module Mingle
       end
 
       def delete(key)
-        table_items.each do |item|
-          if key == item.hash_value
-            item.delete
-            return
-          end
-        end
+        table_items.where(@key_column => key).first.delete
       end
 
       private

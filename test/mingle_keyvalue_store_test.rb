@@ -23,7 +23,7 @@ class MingleKeyvalueStoreTest < Test::Unit::TestCase
 #    create_table
 
     @dynamo = Mingle::KeyvalueStore::DynamodbBased.new(@table_name, :testkey, :testvalue)
-    @pstore = Mingle::KeyvalueStore::PStoreBased.new(TMP_DIR, @table_name)
+    @pstore = Mingle::KeyvalueStore::PStoreBased.new(TMP_DIR, @table_name, :testkey, :testvalue)
   end
 
   def test_names_returned_should_be_equal
@@ -70,6 +70,20 @@ class MingleKeyvalueStoreTest < Test::Unit::TestCase
     assert_equal dynamo_return, pstore_return
   end
 
+  def test_all_items_should_behave_similarly
+    input = { :some => :data }
+    @dynamo["key1"] = input
+    @pstore["key1"] = input
+    @dynamo["key2"] = input
+    @pstore["key2"] = input
+    @dynamo["key3"] = input
+    @pstore["key3"] = input
+
+    pstore_return = @pstore.all_items
+    dynamo_return = @dynamo.all_items
+
+    assert_equal dynamo_return.length, pstore_return.length
+  end
 
   def teardown
     delete_dynamo_entries
