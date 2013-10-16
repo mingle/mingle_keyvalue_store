@@ -63,7 +63,7 @@ module Mingle
       def store_file(path)
         FileUtils.mkdir_p(path)
 
-        file = Tempfile.new("#{@namespace}_multitenancy_configs.pstore", path).path
+        file = Tempfile.new("#{@namespace}_keystore.pstore", path).path
         FileUtils.mkdir_p(File.dirname(file))
         file
       end
