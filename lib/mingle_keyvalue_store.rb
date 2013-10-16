@@ -6,66 +6,11 @@ require "tempfile"
 
 module Mingle
   module KeyvalueStore
-    class CachedSource
-      def initialize(source)
-        @source = source
-      end
-
-      def [](cache_key)
-        Cache.get(keyname(cache_key)) do
-          @source[cache_key]
-        end
-      end
-
-      def []=(cache_key, config)
-        @source[cache_key] = config
-        delete_cache(cache_key)
-      end
-
-      def delete(cache_key)
-        @source.delete(cache_key)
-        delete_cache(cache_key)
-      end
-
-      def clear
-        @source.clear
-        Cache.flush_all
-      end
-
-      def names
-        Cache.get(all_names_key, 15.minutes) do
-          @source.names
-        end
-      end
-
-      def all_items
-        @source.all_items
-      end
-
-      private
-
-      def delete_cache(cache_key)
-        Cache.delete(keyname(cache_key))
-        Cache.delete(all_names_key)
-      end
-
-      def keyname(cache_key)
-        CGI.escape("multitenancy:#{cache_key}_configs")
-      end
-
-      def all_names_key
-        "multitenancy:all_cache_keys"
-      end
-
-      def all_items_key
-        "multitenancy:all_items"
-      end
-    end
-
     class PStoreBased
       def initialize(path, namespace)
         @namespace = namespace
-        @pstore = PStore.new(store_file(path))
+        @store_file = store_file(path)
+        @pstore = PStore.new(@store_file)
       end
 
       def [](store_key)
@@ -76,7 +21,7 @@ module Mingle
         @pstore.transaction do
           @pstore["all_names"] ||= []
           @pstore["all_names"] = (@pstore["all_names"] + [store_key]).uniq
-          @pstore[store_key] = value
+          @pstore[store_key] = JSON.parse(value.to_json)
         end
       end
 
@@ -85,15 +30,17 @@ module Mingle
           @pstore["all_names"].delete_if {|name| name == store_key}
           @pstore.delete(store_key)
         end
+        nil
       end
 
       def clear
-        FileUtils.rm_f(store_file)
-        @pstore = PStore.new(store_file)
+        FileUtils.rm_f(@store_file)
+        @pstore = PStore.new(@store_file)
+        nil
       end
 
       def names
-        @pstore.transaction { @pstore["all_names"] }
+        @pstore.transaction { @pstore["all_names"] || [] }
       end
 
       def all_items
@@ -150,7 +97,12 @@ module Mingle
       end
 
       def delete(key)
-        table_items.where(:key => key).first.delete
+        table_items.each do |item|
+          if key == item.hash_value
+            item.delete
+            return
+          end
+        end
       end
 
       private
@@ -160,6 +112,7 @@ module Mingle
         table.hash_key = [@key_column, :string]
         table.items
       end
+
     end
   end
 end
