@@ -7,7 +7,7 @@ TMP_DIR = File.join(File.dirname(__FILE__), "tmp")
 class MingleKeyvalueStoreTest < Test::Unit::TestCase
   def setup
     @table_name = "dynamo-test"
-
+    FileUtils.mkdir(TMP_DIR) unless File.directory?(TMP_DIR)
     @dynamo = Mingle::KeyvalueStore::DynamodbBased.new(@table_name, :testkey, :testvalue)
     @pstore = Mingle::KeyvalueStore::PStoreBased.new(TMP_DIR, @table_name, :testkey, :testvalue)
   end

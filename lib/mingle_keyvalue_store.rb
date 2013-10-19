@@ -36,8 +36,9 @@ module Mingle
       end
 
       def clear
-        FileUtils.rm_f(@store_file)
-        @pstore = PStore.new(@store_file)
+        @pstore.transaction do
+          @pstore["all_names"].clear
+        end
         nil
       end
 
@@ -61,11 +62,7 @@ module Mingle
       private
 
       def store_file(path)
-        FileUtils.mkdir_p(path)
-
-        file = Tempfile.new("#{@namespace}_keystore.pstore", path).path
-        FileUtils.mkdir_p(File.dirname(file))
-        file
+        File.join(path, "#{@namespace}_keystore.pstore")
       end
     end
 
