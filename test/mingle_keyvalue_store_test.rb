@@ -28,7 +28,7 @@ class MingleKeyvalueStoreTest < Test::Unit::TestCase
     assert_equal @dynamo["foo"], @pstore["foo"]
   end
 
-  def test_delete_should_behave_simlarly
+  def test_delete_should_behave_similarly
     input = { :some => :data }
     @dynamo["key"] = input
     @pstore["key"] = input
@@ -40,7 +40,7 @@ class MingleKeyvalueStoreTest < Test::Unit::TestCase
     assert_equal @dynamo["key"], @pstore["key"]
   end
 
-  def test_clear_should_behave_simlarly
+  def test_clear_should_behave_similarly
     input = { :some => :data }
     @dynamo["key1"] = input
     @pstore["key1"] = input
@@ -57,7 +57,7 @@ class MingleKeyvalueStoreTest < Test::Unit::TestCase
   end
 
 
-  def test_adding_data_after_clear_should_behave_simlarly
+  def test_adding_data_after_clear_should_behave_similarly
     input = { :some => :data }
     @dynamo["key1"] = input
     @pstore["key1"] = input
