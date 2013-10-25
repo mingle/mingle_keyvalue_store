@@ -36,9 +36,8 @@ module Mingle
       end
 
       def clear
-        @pstore.transaction do
-          @pstore["all_names"].clear
-        end
+        FileUtils.rm_f @store_file
+        @pstore = PStore.new(@store_file)
         nil
       end
 

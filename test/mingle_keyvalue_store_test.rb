@@ -56,6 +56,28 @@ class MingleKeyvalueStoreTest < Test::Unit::TestCase
     assert_equal dynamo_return, pstore_return
   end
 
+
+  def test_adding_data_after_clear_should_behave_simlarly
+    input = { :some => :data }
+    @dynamo["key1"] = input
+    @pstore["key1"] = input
+
+    pstore_return = @pstore.clear
+    dynamo_return = @dynamo.clear
+
+    assert_equal [], @dynamo.names
+    assert_equal [], @pstore.names
+
+    assert_equal dynamo_return, pstore_return
+
+    new_input = { :some => :data }
+    @dynamo["key2"] = new_input
+    @pstore["key2"] = new_input
+
+    assert_equal @dynamo["key2"], @pstore["key2"]
+    assert_equal @dynamo.names, @pstore.names
+  end
+
   def test_all_items_should_behave_similarly
     input = { :some => :data }
     @dynamo["key1"] = input
