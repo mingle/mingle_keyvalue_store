@@ -11,6 +11,22 @@ def get_env(key_name)
   ENV[var_name] || raise("missing #{var_name} environment variable!")
 end
 
+def delete_dynamo_table(dynamo_db)
+  puts "[DEBUG] Deleting dynamo db table '#{TEST_DYNAMO_TABLE}'"
+  table = dynamo_db.tables[TEST_DYNAMO_TABLE]
+  table.delete
+  sleep 1 while table.exists?
+end
+
+def create_dynamo_table(dynamo_db)
+  puts "[DEBUG] Creating dynamo db table '#{TEST_DYNAMO_TABLE}'"
+  table = dynamo_db.tables.create(
+                                  TEST_DYNAMO_TABLE, 10, 5,
+                                  :hash_key => { :testkey => :string }
+                                  )
+  sleep 1 while table.status == :creating
+end
+
 Rake::TestTask.new(:test_internal) do |t|
   t.libs = ["lib"]
   t.warning = true
@@ -29,21 +45,10 @@ end
 
 desc "setup dynamo db table"
 task :setup_dynamo => [:aws_config] do
-  puts "[DEBUG] Creating dynamo db table '#{TEST_DYNAMO_TABLE}'"
   dynamo_db = AWS::DynamoDB.new
-  table = dynamo_db.tables.create(
-                                  TEST_DYNAMO_TABLE, 10, 5,
-                                  :hash_key => { :testkey => :string }
-                                  )
-  sleep 1 while table.status == :creating
+
+  delete_dynamo_table(dynamo_db)
+  create_dynamo_table(dynamo_db)
 end
 
-task :teardown_dynamo => [:aws_config] do
-  puts "[DEBUG] Deleting dynamo db table '#{TEST_DYNAMO_TABLE}'"
-  dynamo_db = AWS::DynamoDB.new
-  table = dynamo_db.tables[TEST_DYNAMO_TABLE]
-  table.delete
-  sleep 1 while table.exists?
-end
-
-task :test => [:setup_dynamo, :test_internal, :teardown_dynamo]
+task :test => [:setup_dynamo, :test_internal]
