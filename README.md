@@ -1,3 +1,6 @@
+[![Build Status](https://snap-ci.com/Xepi1GC1RH-xljlY0aGThFoqOtmpsgse_xt-leosres/build_image)](https://snap-ci.com/projects/ThoughtWorksStudios/mingle_keyvalue_store/build_history)
+
+
 # Mingle Keyvalue Store
 
 A key value store with a PStore and a DynamoDB endpoint - both with the same behavior. This is useful when you have to run tests in your application and does not want to hit DynamoDB in every test.
@@ -11,4 +14,3 @@ else
 end  
 ```
 
-[![Build Status](https://snap-ci.com/Xepi1GC1RH-xljlY0aGThFoqOtmpsgse_xt-leosres/build_image)](https://snap-ci.com/projects/ThoughtWorksStudios/mingle_keyvalue_store/build_history)
