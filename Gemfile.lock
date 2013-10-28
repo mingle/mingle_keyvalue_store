@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    mingle_keyvalue_store (0.1.4)
+    mingle_keyvalue_store (0.1.5)
       aws-sdk (= 1.11.3)
 
 GEM
@@ -11,7 +11,7 @@ GEM
       json (~> 1.4)
       nokogiri (< 1.6.0)
       uuidtools (~> 2.1)
-    json (1.8.0)
+    json (1.8.1)
     nokogiri (1.5.10)
     rake (0.8.7)
     uuidtools (2.1.4)
