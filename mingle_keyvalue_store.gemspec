@@ -6,7 +6,7 @@ Gem::Specification.new do |gem|
   gem.homepage      = "https://github.com/ThoughtWorksStudios/mingle_keyvalue_store"
   gem.license       = 'MIT'
 
-  gem.add_runtime_dependency 'aws-sdk', "1.11.3"
+  gem.add_runtime_dependency 'aws-sdk', "~> 1.11", ">= 1.11.3"
 
   gem.add_development_dependency 'rake'
 
@@ -15,5 +15,5 @@ Gem::Specification.new do |gem|
 
   gem.name          = "mingle_keyvalue_store"
   gem.require_paths = ["lib"]
-  gem.version       = '0.1.5'
+  gem.version       = '0.1.6'
 end
