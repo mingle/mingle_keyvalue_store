@@ -68,12 +68,12 @@ module Mingle
     class DynamodbBased
       def initialize(table_name, key_column, value_column)
         @key_column = key_column
-        @value_column = value_column
+        @value_column = value_column.to_s
         @table_name = table_name
       end
 
       def [](store_key)
-        if attribute = table_items[store_key].attributes[@value_column]
+        if attribute = attributes(table_items[store_key])[@value_column]
           JSON.parse(attribute)
         end
       end
@@ -91,7 +91,7 @@ module Mingle
       end
 
       def all_items
-        table_items.map { |item| item.attributes.to_hash }
+        table_items.map { |item| attributes(item) }
       end
 
       def delete(key)
@@ -99,6 +99,9 @@ module Mingle
       end
 
       private
+      def attributes(item)
+        item.attributes.to_h(:consistent_read => true)
+      end
 
       def table_items
         table = AWS::DynamoDB.new.tables[@table_name]
