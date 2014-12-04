@@ -1,6 +1,6 @@
 require "test/unit"
-
 require "mingle_keyvalue_store"
+require 'json'
 
 TMP_DIR = File.join(File.dirname(__FILE__), "tmp")
 
@@ -13,7 +13,7 @@ class MingleKeyvalueStoreTest < Test::Unit::TestCase
   end
 
   def test_names_returned_should_be_equal
-    input = { :key => :value }
+    input = { :key => :value }.to_json
     @dynamo["foo"] = input
     @pstore["foo"] = input
 
@@ -21,7 +21,7 @@ class MingleKeyvalueStoreTest < Test::Unit::TestCase
   end
 
   def test_value_for_key_should_be_equal
-    input = {:somekey => {:foo => :bar} }
+    input = {:somekey => {:foo => :bar} }.to_json
     @dynamo["foo"] = input
     @pstore["foo"] = input
 
@@ -29,7 +29,7 @@ class MingleKeyvalueStoreTest < Test::Unit::TestCase
   end
 
   def test_delete_should_behave_similarly
-    input = { :some => :data }
+    input = { :some => :data }.to_json
     @dynamo["key"] = input
     @pstore["key"] = input
 
@@ -41,7 +41,7 @@ class MingleKeyvalueStoreTest < Test::Unit::TestCase
   end
 
   def test_clear_should_behave_similarly
-    input = { :some => :data }
+    input = { :some => :data }.to_json
     @dynamo["key1"] = input
     @pstore["key1"] = input
     @dynamo["key2"] = input
@@ -58,7 +58,7 @@ class MingleKeyvalueStoreTest < Test::Unit::TestCase
 
 
   def test_adding_data_after_clear_should_behave_similarly
-    input = { :some => :data }
+    input = { :some => :data }.to_json
     @dynamo["key1"] = input
     @pstore["key1"] = input
 
@@ -70,7 +70,7 @@ class MingleKeyvalueStoreTest < Test::Unit::TestCase
 
     assert_equal dynamo_return, pstore_return
 
-    new_input = { :some => :data }
+    new_input = { :some => :data }.to_json
     @dynamo["key2"] = new_input
     @pstore["key2"] = new_input
 
@@ -79,7 +79,7 @@ class MingleKeyvalueStoreTest < Test::Unit::TestCase
   end
 
   def test_all_items_should_behave_similarly
-    input = { :some => :data }
+    input = { :some => :data }.to_json
     @dynamo["key1"] = input
     @pstore["key1"] = input
     @dynamo["key2"] = input

@@ -23,7 +23,7 @@ module Mingle
         @pstore.transaction do
           @pstore["all_names"] ||= []
           @pstore["all_names"] = (@pstore["all_names"] + [store_key]).uniq
-          @pstore[store_key] = JSON.parse(value.to_json)
+          @pstore[store_key] = value
         end
       end
 
@@ -51,7 +51,7 @@ module Mingle
           @pstore["all_names"].map do |name|
             {
               @key_column.to_s => name,
-              @value_column.to_s => @pstore[name].to_json
+              @value_column.to_s => @pstore[name]
             }
           end
         end
@@ -74,12 +74,12 @@ module Mingle
 
       def [](store_key)
         if attribute = attributes(table_items[store_key])[@value_column]
-          JSON.parse(attribute)
+          attribute
         end
       end
 
       def []=(store_key, value)
-        table_items.create(@key_column => store_key, @value_column => value.to_json)
+        table_items.create(@key_column => store_key, @value_column => value)
       end
 
       def clear
