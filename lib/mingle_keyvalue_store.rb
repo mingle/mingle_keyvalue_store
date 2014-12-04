@@ -20,6 +20,7 @@ module Mingle
       end
 
       def []=(store_key, value)
+        raise ArgumentError, "Value must be String" unless value.is_a?(String)
         @pstore.transaction do
           @pstore["all_names"] ||= []
           @pstore["all_names"] = (@pstore["all_names"] + [store_key]).uniq

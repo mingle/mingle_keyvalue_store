@@ -12,6 +12,24 @@ class MingleKeyvalueStoreTest < Test::Unit::TestCase
     @pstore = Mingle::KeyvalueStore::PStoreBased.new(TMP_DIR, @table_name, :testkey, :testvalue)
   end
 
+  def test_store_non_string_value_in_pstore_should_raise_error
+    assert_raise(ArgumentError) do
+      @pstore["foo"] = true
+    end
+    assert_raise(ArgumentError) do
+      @dynamo["foo"] = true
+    end
+  end
+
+  def test_handle_nil_value
+    assert_raise(ArgumentError) do
+      @pstore["foo"] = nil
+    end
+    assert_raise(ArgumentError) do
+      @dynamo["foo"] = nil
+    end
+  end
+
   def test_names_returned_should_be_equal
     input = { :key => :value }.to_json
     @dynamo["foo"] = input
