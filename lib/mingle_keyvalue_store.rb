@@ -3,35 +3,43 @@ require "aws"
 require "pstore"
 require "fileutils"
 require "tempfile"
+require 'monitor'
 
 module Mingle
   module KeyvalueStore
-    class PStoreBased
+    class PStoreBased < Monitor
       def initialize(path, namespace, key_column, value_column)
         @namespace = namespace
         @store_file = store_file(path)
         @key_column = key_column
         @value_column = value_column
         @pstore = PStore.new(@store_file)
+        super()
       end
 
       def [](store_key)
-        @pstore.transaction { @pstore[store_key] }
+        synchronize do
+          @pstore.transaction { @pstore[store_key] }
+        end
       end
 
       def []=(store_key, value)
         raise ArgumentError, "Value must be String" unless value.is_a?(String)
-        @pstore.transaction do
-          @pstore["all_names"] ||= []
-          @pstore["all_names"] = (@pstore["all_names"] + [store_key]).uniq
-          @pstore[store_key] = value
+        synchronize do
+          @pstore.transaction do
+            @pstore["all_names"] ||= []
+            @pstore["all_names"] = (@pstore["all_names"] + [store_key]).uniq
+            @pstore[store_key] = value
+          end
         end
       end
 
       def delete(store_key)
-        @pstore.transaction do
-          @pstore["all_names"].delete_if {|name| name == store_key}
-          @pstore.delete(store_key)
+        synchronize do
+          @pstore.transaction do
+            @pstore["all_names"].delete_if {|name| name == store_key}
+            @pstore.delete(store_key)
+          end
         end
         nil
       end
@@ -43,17 +51,21 @@ module Mingle
       end
 
       def names
-        @pstore.transaction { @pstore["all_names"] || [] }
+        synchronize do
+          @pstore.transaction { @pstore["all_names"] || [] }
+        end
       end
 
       def all_items
-        @pstore.transaction do
-          return [] unless @pstore["all_names"]
-          @pstore["all_names"].map do |name|
-            {
-              @key_column.to_s => name,
-              @value_column.to_s => @pstore[name]
-            }
+        synchronize do
+          @pstore.transaction do
+            return [] unless @pstore["all_names"]
+            @pstore["all_names"].map do |name|
+              {
+                @key_column.to_s => name,
+                @value_column.to_s => @pstore[name]
+              }
+            end
           end
         end
 
