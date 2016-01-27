@@ -15,5 +15,5 @@ Gem::Specification.new do |gem|
 
   gem.name          = "mingle_keyvalue_store"
   gem.require_paths = ["lib"]
-  gem.version       = '0.1.8'
+  gem.version       = '0.1.9'
 end
