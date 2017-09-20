@@ -1,54 +1,70 @@
 require 'rake/testtask'
-require "rubygems"
-require "aws"
+require 'rubygems'
+require 'aws-sdk-dynamodb'
 
 task :default => :test
 
-TEST_DYNAMO_TABLE = "dynamo-test"
+TEST_DYNAMO_TABLE = 'dynamo-test'
 
 def get_env(key_name)
   var_name = key_name.to_s.upcase
   ENV[var_name] || raise("missing #{var_name} environment variable!")
 end
 
-def delete_dynamo_table(dynamo_db)
-  puts "[DEBUG] Deleting dynamo db table '#{TEST_DYNAMO_TABLE}'"
-  table = dynamo_db.tables[TEST_DYNAMO_TABLE]
-  table.delete
-  sleep 1 while table.exists?
+def delete_dynamo_table(client)
+  log "Deleting dynamo db table: '#{TEST_DYNAMO_TABLE}'"
+  client.delete_table(table_name: TEST_DYNAMO_TABLE)
+  Aws::DynamoDB::Waiters::TableNotExists.new(client: client, delay: 1).wait(table_name: TEST_DYNAMO_TABLE)
+rescue Aws::DynamoDB::Errors::ResourceNotFoundException
+  log "Table does not exist: '#{TEST_DYNAMO_TABLE}'"
 end
 
-def create_dynamo_table(dynamo_db)
-  puts "[DEBUG] Creating dynamo db table '#{TEST_DYNAMO_TABLE}'"
-  table = dynamo_db.tables.create(
-                                  TEST_DYNAMO_TABLE, 10, 5,
-                                  :hash_key => { :testkey => :string }
-                                  )
-  sleep 1 while table.status == :creating
+def create_dynamo_table(client)
+  log "Creating dynamo db table '#{TEST_DYNAMO_TABLE}'"
+  client.create_table(table_name: TEST_DYNAMO_TABLE,
+                      attribute_definitions: [
+                          {
+                              attribute_name: 'testkey',
+                              attribute_type: 'S',
+                          },
+                      ],
+                      key_schema: [
+                          {
+                              attribute_name: 'testkey',
+                              key_type: 'HASH',
+                          },
+                      ],
+                      provisioned_throughput: {
+                          read_capacity_units: 10,
+                          write_capacity_units: 5,
+                      }
+  )
+  Aws::DynamoDB::Waiters::TableExists.new(client: client, delay: 1).wait(table_name: TEST_DYNAMO_TABLE)
 end
 
 Rake::TestTask.new(:test_internal) do |t|
-  t.libs = ["lib"]
+  t.libs = ['lib']
   t.warning = true
   t.verbose = true
   t.test_files = FileList['test/*_test.rb']
 end
 
 task :aws_config do
-  AWS.config(
-             :access_key_id => get_env(:aws_access_key_id),
-             :secret_access_key => get_env(:aws_secret_access_key),
-             :region => get_env(:aws_region),
-             :dynamo_db => {:api_version => "2012-08-10"}
-             )
+  Aws.config.update(
+      region: get_env(:aws_region),
+      credentials: Aws::Credentials.new(get_env(:aws_access_key_id), get_env(:aws_secret_access_key))
+  )
 end
 
-desc "setup dynamo db table"
+desc 'setup dynamo db table'
 task :setup_dynamo => [:aws_config] do
-  dynamo_db = AWS::DynamoDB.new
+  client = Aws::DynamoDB::Client.new
+  delete_dynamo_table(client)
+  create_dynamo_table(client)
+end
 
-  delete_dynamo_table(dynamo_db)
-  create_dynamo_table(dynamo_db)
+def log(str)
+  puts "[DEBUG] #{str}"
 end
 
 task :test => [:setup_dynamo, :test_internal]

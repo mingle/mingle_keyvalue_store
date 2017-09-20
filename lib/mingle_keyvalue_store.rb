@@ -1,8 +1,7 @@
-require "rubygems"
-require "aws"
-require "pstore"
-require "fileutils"
-require "tempfile"
+require 'aws-sdk-dynamodb'
+require 'pstore'
+require 'fileutils'
+require 'tempfile'
 require 'monitor'
 
 module Mingle
@@ -24,11 +23,11 @@ module Mingle
       end
 
       def []=(store_key, value)
-        raise ArgumentError, "Value must be String" unless value.is_a?(String)
+        raise ArgumentError, 'Value must be String' unless value.is_a?(String)
         synchronize do
           @pstore.transaction do
-            @pstore["all_names"] ||= []
-            @pstore["all_names"] = (@pstore["all_names"] + [store_key]).uniq
+            @pstore['all_names'] ||= []
+            @pstore['all_names'] = (@pstore['all_names'] + [store_key]).uniq
             @pstore[store_key] = value
           end
         end
@@ -37,7 +36,7 @@ module Mingle
       def delete(store_key)
         synchronize do
           @pstore.transaction do
-            @pstore["all_names"].delete_if {|name| name == store_key}
+            @pstore['all_names'].delete_if {|name| name == store_key}
             @pstore.delete(store_key)
           end
         end
@@ -52,15 +51,15 @@ module Mingle
 
       def names
         synchronize do
-          @pstore.transaction { @pstore["all_names"] || [] }
+          @pstore.transaction { @pstore['all_names'] || [] }
         end
       end
 
       def all_items
         synchronize do
           @pstore.transaction do
-            return [] unless @pstore["all_names"]
-            @pstore["all_names"].map do |name|
+            return [] unless @pstore['all_names']
+            @pstore['all_names'].map do |name|
               {
                 @key_column.to_s => name,
                 @value_column.to_s => @pstore[name]
@@ -80,48 +79,56 @@ module Mingle
 
     class DynamodbBased
       def initialize(table_name, key_column, value_column)
-        @key_column = key_column
+        @key_column = key_column.to_s
         @value_column = value_column.to_s
         @table_name = table_name
+        @table = Aws::DynamoDB::Resource.new.table(table_name)
       end
 
       def [](store_key)
-        if attribute = attributes(table_items[store_key])[@value_column]
-          attribute
+        if item = @table.get_item(key: {@key_column => store_key}).item
+          item[@value_column]
         end
       end
 
       def []=(store_key, value)
-        table_items.create(@key_column => store_key, @value_column => value)
+        raise ArgumentError, 'Value must be String' unless value.is_a?(String)
+        @table.put_item(item: {@key_column => store_key, @value_column => value})
       end
 
       def clear
-        table_items.each(&:delete)
+        all_items_from_table.each do |item|
+          @table.delete_item(key: {@key_column => item['testkey']})
+        end
+        nil
       end
 
       def names
-        table_items.map(&:hash_value)
+        all_items_from_table(attributes_to_get: [@key_column]).map{|hash| hash[@key_column]}
       end
 
       def all_items
-        table_items.map { |item| attributes(item) }
+        all_items_from_table
       end
 
       def delete(key)
-        table_items.where(@key_column => key).first.delete
+        @table.delete_item(key: {@key_column => key})
+        nil
       end
 
       private
-      def attributes(item)
-        item.attributes.to_h(:consistent_read => true)
+      def all_items_from_table(conditions={})
+        items = []
+        scan_output = @table.scan(conditions)
+        return items unless scan_output.items
+        items += scan_output.items
+        # when the table data is too large scan will return in batches
+        while scan_output.last_evaluated_key
+          scan_output = @table.scan(conditions.merge(exclusive_start_key: scan_output.last_evaluated_key))
+          items += scan_output.items
+        end
+        items
       end
-
-      def table_items
-        table = AWS::DynamoDB.new.tables[@table_name]
-        table.hash_key = [@key_column, :string]
-        table.items
-      end
-
     end
   end
 end
